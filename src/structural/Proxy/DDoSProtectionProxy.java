@@ -19,7 +19,7 @@ public class  DDoSProtectionProxy implements BankingService {
         if (allowedIPs.contains(clientIP)) {
             bankingService.processRequest(request);
         } else {
-            System.out.println("DDoS attack detected. Request from IP " + clientIP + " blocked.");
+            System.out.println("DDoS атака виявлена. Запит з IP-адреси " + clientIP + " заблоковано.");
         }
     }
         private String getClientIPFromRequest(String request) {

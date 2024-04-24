@@ -1,14 +1,32 @@
 import Creational.Buider.BankAccount;
-import Creational.Factory.abs.*;
+import Creational.Factory.abs.Card;
+import Creational.Factory.abs.CardFactory;
+import Creational.Factory.abs.DebitCreditFactory;
 import Creational.Factory.method.*;
-import Creational.Factory.method.CardType;
+import Creational.Prototype.Client;
 import Creational.Singletone.Transaction;
 import Creational.Singletone.TransactionProcessor;
-import Creational.Prototype.Client;
-/*import structural.Adapter.CurrencyAccount;
-import structural.Adapter.EURCurrencyAccount;
-import structural.Adapter.GBPCurrencyAccount;
-import structural.Adapter.USDCurrencyAccount;*/
+import behavioral.CoR.*;
+import behavioral.Command.*;
+import behavioral.Iterator.Bank;
+import behavioral.Iterator.BankBranch;
+import behavioral.Iterator.BankBranchIterator;
+import behavioral.Iterator.Iterator;
+import behavioral.Mediator.CreditMediator;
+import behavioral.Visitor.*;
+import behavioral.Memento.BankingApp;
+import behavioral.Memento.SessionCaretaker;
+import behavioral.Observer.BankClient;
+import behavioral.Observer.BankTransaction;
+import behavioral.Observer.TransactionNotificationSystem;
+import behavioral.State.CanceledState;
+import behavioral.State.CompletedState;
+import behavioral.State.FailedState;
+import behavioral.State.TransactionContext;
+import behavioral.Strategy.*;
+import behavioral.Template_method.AccountFeeCalculator;
+import behavioral.Template_method.FinancialCalculator;
+import behavioral.Template_method.LoanInterestCalculator;
 import structural.Adapter.ChatBot;
 import structural.Adapter.ChatBotAdapter;
 import structural.Adapter.ClientInterface;
@@ -130,6 +148,7 @@ public class Main {
         CurrencyExchange usdExchange = new USDCurrencyExchange(usd, usdConverter);
         CurrencyExchange euroExchange = new UAHCurrencyExchange(euro, euroConverter);
         CurrencyExchange uahExchange = new UAHCurrencyExchange(uah, uahConverter);
+        CurrencyExchange euroExchange1 = new UAHCurrencyExchange(usd, usdConverter);
 
 
         euroExchange.exchange(100, Currency.USD);
@@ -194,12 +213,13 @@ public class Main {
                 break;
             default:
                 System.out.println("Невідома опція");
-        scanner.close();}
+                scanner.close();
+        }
 
         System.out.println("----------Decorator end ----------");
         System.out.println("----------Facade begin ----------");
         AuthenticationFacade authenticationFacade = new AuthenticationFacade();
-         String username = "user123";
+        String username = "user123";
         String password = "password123";
         if (authenticationFacade.login(username, password)) {
             System.out.println("Користувач " + username + " успішно автентифікований");
@@ -239,7 +259,162 @@ public class Main {
         BankingService proxyService = new DDoSProtectionProxy(realService);
         proxyService.processRequest("Деякі банківські запити");
         System.out.println("----------Proxy end ----------");
-    }}
+        System.out.println("----------CoR start ----------");
+        TransactionHandler authorizationHandler = new AuthorizationHandler();
+        TransactionHandler suspiciousTransactionHandler = new SuspiciousTransactionHandler();
+        TransactionHandler transactionLoggingHandler = new TransactionLoggingHandler();
 
+        // Налаштування ланцюжка обробників
+        authorizationHandler.setNextHandler(suspiciousTransactionHandler);
+        suspiciousTransactionHandler.setNextHandler(transactionLoggingHandler);
 
+        // Створення тестового запиту на обробку транзакції
+        TransactionRequest request1 = new TransactionRequest(5000, "123456789");
+        TransactionRequest request2 = new TransactionRequest(15000, "987654321");
 
+        // Обробка тестових запитів
+        authorizationHandler.processRequest(request1);
+
+        authorizationHandler.processRequest(request2);
+        System.out.println("----------CoR end ----------");
+        System.out.println("-----------Comand start-------------");
+        Account account1 = new Account("123456789", 1000);
+        Account account2 = new Account("987654321", 2000);
+
+        Command transferCommand = new TransferMoneyCommand(account1, account2, 500);
+        Command withdrawCommand = new WithdrawMoneyCommand(account1, 200);
+        Command depositCommand = new DepositMoneyCommand(account2, 1000);
+        Command blockCommand = new BlockAccountCommand(account1);
+        Command unblockCommand = new UnblockAccountCommand(account1);
+
+// Створення банківської системи
+        BankingSystem bankingSystem = new BankingSystem();
+
+        bankingSystem.executeCommand(transferCommand);
+        bankingSystem.executeCommand(withdrawCommand);
+        bankingSystem.executeCommand(depositCommand);
+        bankingSystem.executeCommand(blockCommand);
+        bankingSystem.executeCommand(unblockCommand);
+
+        System.out.println("-----------Comand end-------------");
+        System.out.println("-----------Iterator start-------------");
+        // Створення банку та його філій
+        Bank bank = new Bank();
+        bank.addBranch(new BankBranch("Головний відділ", "вул. Головна, 123", "123-456-7890"));
+        bank.addBranch(new BankBranch("Відділення в центрі", "вул. Центральна, 456", "456-789-0123"));
+        bank.addBranch(new BankBranch("Підсобний відділ", "вул. Підсобна, 789", "789-012-3456"));
+
+        // Використання ітератора для перегляду філій банку
+        BankBranchIterator iterator = bank.createIterator();
+        while (iterator.hasNext()) {
+            BankBranch branch = iterator.next();
+            System.out.println("Назва філії: " + branch.getBranchName());
+            System.out.println("Адреса: " + branch.getBranchAddress());
+            System.out.println("Номер телефону: " + branch.getPhoneNumber());
+            System.out.println();
+        System.out.println("-------------Iterator end----------------");
+        System.out.println("------------Memento start----------------");
+        BankingApp bankingApp = new BankingApp();
+        bankingApp.updateSession("Oliynik_A", "24.04.2024");
+
+        // Створення та збереження знімка
+        SessionCaretaker caretaker = new SessionCaretaker();
+        caretaker.saveSessionState(bankingApp.getSessionState());
+
+        // Симуляція вимкнення та перезавантаження додатку
+        bankingApp = new BankingApp();
+
+        // Відновлення сесії за допомогою збереженого знімка
+        bankingApp.restoreSession(caretaker.restoreLastSessionState());
+
+        // Відображення інформації про сесію
+        bankingApp.displaySessionInfo();
+        System.out.println("------------Memento end----------------");
+        System.out.println("-------Observer start----------------------");
+        TransactionNotificationSystem notificationSystem = new TransactionNotificationSystem();
+
+        // Створення клієнтів-спостерігачів
+        BankClient client1 = new BankClient("John Doe");
+        BankClient client2 = new BankClient("Jane Smith");
+
+        // Підписка клієнтів на сповіщення
+        notificationSystem.subscribe(client1);
+        notificationSystem.subscribe(client2);
+
+        // Симуляція нових транзакцій
+        BankTransaction transaction11 = new BankTransaction("Payment received", 1000);
+        BankTransaction transaction12 = new BankTransaction("Withdrawal", 500);
+        BankTransaction transaction13 = new BankTransaction("Online purchase", 200);
+
+        // Сповіщення про нові транзакції
+        notificationSystem.notifyObservers(transaction11);
+        notificationSystem.notifyObservers(transaction12);
+        notificationSystem.notifyObservers(transaction13);
+
+        // Відписка одного з клієнтів від сповіщень
+        notificationSystem.unsubscribe(client2);
+
+        // Ще одна транзакція
+        BankTransaction transaction14 = new BankTransaction("Deposit", 1500);
+        notificationSystem.notifyObservers(transaction14);
+        System.out.println("------------Observer end-----------------");
+        System.out.println("--------------State start---------------");
+        // Створення контексту транзакції
+        TransactionContext context = new TransactionContext();
+
+        // Виконання транзакції у стані "В очікуванні"
+        context.processTransaction();
+
+        // Зміна стану на "Успішно виконано" і повторне виконання транзакції
+        context.setState(new CompletedState());
+        context.processTransaction();
+
+        // Зміна стану на "Неуспішно виконано" і повторне виконання транзакції
+        context.setState(new FailedState());
+        context.processTransaction();
+
+        // Зміна стану на "Скасовано" і повторне виконання транзакції
+        context.setState(new CanceledState());
+        context.processTransaction();
+
+        System.out.println("-------------State end---------------");
+        System.out.println("---------------Strategy start--------------");
+        CreditManager creditManager = new CreditManager();
+
+        // Встановлення стратегії кредитування для корпоративних клієнтів
+        creditManager.setCreditStrategy(new CorporateCreditStrategy());
+        creditManager.applyCredit(new CreditApplicant("ABC Corporation"));
+
+        // Встановлення стратегії кредитування для малих підприємств
+        creditManager.setCreditStrategy(new SmallBusinessCreditStrategy());
+        creditManager.applyCredit(new CreditApplicant("XYZ Small Business"));
+
+        // Встановлення стратегії кредитування для фізичних осіб
+        creditManager.setCreditStrategy(new IndividualCreditStrategy());
+        creditManager.applyCredit(new CreditApplicant("John Doe"));
+        System.out.println("---------------Strategy end--------------");
+        System.out.println("-------------Template method start----------------");
+        // Розрахунок відсоткової ставки кредиту
+        System.out.println("Loan Interest Calculation:");
+        FinancialCalculator loanCalculator = new LoanInterestCalculator();
+        loanCalculator.calculate();
+
+        // Розрахунок комісії за обслуговування рахунку
+        System.out.println("\nAccount Fee Calculation:");
+        FinancialCalculator accountFeeCalculator = new AccountFeeCalculator();
+        accountFeeCalculator.calculate();
+        System.out.println("---------------Template method end--------------");
+        System.out.println("---------------Visitor start--------------");
+
+            // Створення фінансових продуктів
+            FinancialProduct loan = new Loan();
+            FinancialProduct deposit = new Deposit();
+
+            // Створення відвідувача
+            Visitor visitor = new FinancialProductVisitor();
+
+            // Обробка продуктів відвідувачем
+            loan.accept(visitor);
+            deposit.accept(visitor);
+        System.out.println("---------------Visitor end--------------");
+    }}}
